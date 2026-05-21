@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const movieService = require('../services/movieService');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// 1. GET /movies - List semua movies
-router.get('/movies', async (req, res) => {
+// 1. GET /movies - List semua movies (Dilindungi oleh authMiddleware)
+router.get('/movies', authMiddleware.verifyToken, async (req, res) => {
     try {
-        const movies = await movieService.getAllMovies();
+        // req.query dikirimkan ke service untuk fitur Search, Filter, Sort
+        const movies = await movieService.getAllMovies(req.query);
         res.status(200).json({
             status: 'success',
             data: movies
@@ -16,7 +18,7 @@ router.get('/movies', async (req, res) => {
 });
 
 // 2. GET /movie/:id - Menampilkan satu movie berdasarkan id
-router.get('/movie/:id', async (req, res) => {
+router.get('/movie/:id', authMiddleware.verifyToken, async (req, res) => {
     try {
         const movie = await movieService.getMovieById(req.params.id);
         if (!movie) {
@@ -32,7 +34,7 @@ router.get('/movie/:id', async (req, res) => {
 });
 
 // 3. POST /movie - Menambahkan data movie
-router.post('/movie', async (req, res) => {
+router.post('/movie', authMiddleware.verifyToken, async (req, res) => {
     try {
         const newMovie = await movieService.addMovie(req.body);
         res.status(201).json({
@@ -46,7 +48,7 @@ router.post('/movie', async (req, res) => {
 });
 
 // 4. PUT/PATCH /movie/:id - Mengubah data berdasarkan id
-router.patch('/movie/:id', async (req, res) => {
+router.patch('/movie/:id', authMiddleware.verifyToken, async (req, res) => {
     try {
         const updatedMovie = await movieService.updateMovie(req.params.id, req.body);
         if (updatedMovie.changes === 0) {
@@ -62,7 +64,7 @@ router.patch('/movie/:id', async (req, res) => {
     }
 });
 // Using PUT mapped to the same PATCH logic as per standard update practices, though PATCH is specified for partial updates.
-router.put('/movie/:id', async (req, res) => {
+router.put('/movie/:id', authMiddleware.verifyToken, async (req, res) => {
     try {
         const updatedMovie = await movieService.updateMovie(req.params.id, req.body);
         if (updatedMovie.changes === 0) {
@@ -80,7 +82,7 @@ router.put('/movie/:id', async (req, res) => {
 
 
 // 5. DELETE /movie/:id - Menghapus data berdasarkan id
-router.delete('/movie/:id', async (req, res) => {
+router.delete('/movie/:id', authMiddleware.verifyToken, async (req, res) => {
     try {
         const result = await movieService.deleteMovie(req.params.id);
         if (result.changes === 0) {

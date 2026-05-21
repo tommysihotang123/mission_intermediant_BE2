@@ -1,10 +1,43 @@
 const db = require('../database');
 
 const movieService = {
-    getAllMovies: async () => {
-        const query = 'SELECT * FROM series_films';
-        // db.query returns an array like [rows, fields]. We destructure to get rows.
-        const [rows] = await db.query(query);
+    getAllMovies: async (queryParams) => {
+        let query = 'SELECT * FROM series_films';
+        const conditions = [];
+        const values = [];
+
+        // 1. Search (Pencarian berdasarkan judul)
+        if (queryParams.search) {
+            conditions.push('title LIKE ?');
+            values.push(`%${queryParams.search}%`);
+        }
+
+        // 2. Filter (Penyaringan berdasarkan tipe, misalnya: "Movie" atau "Series")
+        if (queryParams.filter) {
+            conditions.push('type = ?');
+            values.push(queryParams.filter);
+        }
+
+        // Terapkan kondisi WHERE jika ada search atau filter
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        // 3. Sort (Pengurutan data)
+        if (queryParams.sort) {
+            // Contoh sort: release_date, rating, dll
+            // Kita asumsikan default pengurutannya ASC, tapi bisa juga diatur jadi DESC
+            const sortField = queryParams.sort;
+            const sortOrder = queryParams.order && queryParams.order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+            
+            // Validasi nama kolom untuk mencegah SQL Injection pada ORDER BY
+            const allowedSortFields = ['id', 'title', 'release_date', 'type', 'age_rating'];
+            if (allowedSortFields.includes(sortField)) {
+                query += ` ORDER BY ${sortField} ${sortOrder}`;
+            }
+        }
+
+        const [rows] = await db.query(query, values);
         return rows;
     },
 
